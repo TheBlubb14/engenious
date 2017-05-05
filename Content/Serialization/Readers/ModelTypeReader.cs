@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using engenious.Graphics;
 
 namespace engenious.Content.Serialization
@@ -6,14 +7,15 @@ namespace engenious.Content.Serialization
     [ContentTypeReader(typeof(Model))]
     public class ModelTypeReader:ContentTypeReader<Model>
     {
-        private Node ReadTree(Model model, ContentReader reader)
+        private Node ReadTree(Model model, ContentReader reader,Node parent=null)
         {
             int index = reader.ReadInt32();
             var node = model.Nodes[index];
+            node.Parent = parent;
             int childCount = reader.ReadInt32();
             node.Children = new List<Node>();
             for (int i = 0; i < childCount; i++)
-                node.Children.Add(ReadTree(model, reader));
+                node.Children.Add(ReadTree(model, reader,node));
 
             return node;
         }
@@ -73,8 +75,10 @@ namespace engenious.Content.Serialization
 
             model.RootNode = ReadTree(model, reader);
             int animationCount = reader.ReadInt32();
+
             for (int animationIndex=0;animationIndex<animationCount;animationIndex++)
             {
+                Dictionary<Node,AnimationNode> nodeAnimiation = new Dictionary<Node, AnimationNode>();
                 var anim = new Animation();
                 anim.MaxTime = reader.ReadSingle();
                 int channelCount = reader.ReadInt32();
@@ -83,6 +87,10 @@ namespace engenious.Content.Serialization
                 {
                     AnimationNode node = new AnimationNode();
                     node.Node = model.Nodes[reader.ReadInt32()];
+                    node.Node.IsTransformed = true;
+
+                    nodeAnimiation.Add(node.Node,node);
+
                     node.Frames = new List<AnimationFrame>();
                     int frameCount = reader.ReadInt32();
                     for (int i = 0; i < frameCount; i++)
@@ -94,23 +102,38 @@ namespace engenious.Content.Serialization
                     }
                     anim.Channels.Add(node);
                 }
+
+                foreach (var node in anim.Channels)
+                {
+                    AnimationNode parentNode=null;
+                    Node curNode = node.Node.Parent;
+                    while (curNode != null && !nodeAnimiation.TryGetValue(curNode, out parentNode))
+                    {
+                        curNode = curNode.Parent;
+                    }
+                    if (parentNode != null)
+                        node.Parent=parentNode;
+
+                }
+                anim.Precalculate();
                 model.Animations.Add(anim);
             }
-            foreach(var anim in model.Animations)
+
+            /*foreach(var anim in model.Animations)
             {
                 foreach(var ch in anim.Channels)
                 {
                     if (!ch.Node.Name.Contains("$"))
-                        continue;
+                        continue;//TODO?
                     //var firstFrame = ch.Frames.FirstOrDefault();
-                    for (int j=1;j<ch.Frames.Count;j++)
+                    for (int j=0;j<ch.Frames.Count;j++)
                     {
                         //var firstFrame = ch.Frames[j-1];
                         var f = ch.Frames[j];
                         f.Transform = new AnimationTransform("",f.Transform.Location,f.Transform.Scale,f.Transform.Rotation);
                     }
                 }
-            }
+            }*/
             model.UpdateAnimation(null, model.RootNode);
             return model;
         }

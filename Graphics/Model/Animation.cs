@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-
+using System.Linq;
 namespace engenious.Graphics
 {
     public class Animation
@@ -9,7 +9,14 @@ namespace engenious.Graphics
         public float MaxTime{ get; set; }
 
         public List<AnimationNode> Channels{ get; set; }
-
+        public void Precalculate()
+        {
+            foreach(var channel in Channels)
+            {
+                for(int i=0;i<channel.Frames.Count;i++)
+                    channel.Precalculate(i);
+            }
+        }
         public void Update(float elapsed)
         {
             Time = elapsed;

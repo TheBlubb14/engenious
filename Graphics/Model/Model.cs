@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace engenious.Graphics
 {
@@ -32,12 +33,15 @@ namespace engenious.Graphics
 
         internal void UpdateAnimation(Node parent, Node node)
         {
-
-            if (parent == null)
-                node.GlobalTransform = node.LocalTransform;
-            else
-                node.GlobalTransform = parent.GlobalTransform*node.LocalTransform;
-
+            Node curNode=node;
+            while (curNode != null && !curNode.IsTransformed)
+            {
+                curNode = curNode.Parent;
+            }
+            if (curNode != null)
+            {
+                node.LocalTransform = curNode.LocalTransform;
+            }
             foreach (var child in node.Children)
             {
                 UpdateAnimation(node, child);
@@ -54,6 +58,7 @@ namespace engenious.Graphics
 
         public void Draw(IModelEffect effect, Texture2D text)
         {
+
             DrawNode(RootNode, effect, text);
         }
 
@@ -61,13 +66,12 @@ namespace engenious.Graphics
         {
             if (node.Meshes.Count == 0 && node.Children.Count == 0)
                 return;
-            effect.Texture = text;
 
+            effect.World = Transform*node.LocalTransform*node.Transformation;
+            effect.Texture = text;
             foreach (var pass in effect.CurrentTechnique.Passes.PassesList)
             {
                 pass.Apply();
-                
-                effect.World = Transform*node.GlobalTransform*node.Transformation;
 
                 foreach (var mesh in node.Meshes)
                 {
@@ -75,7 +79,9 @@ namespace engenious.Graphics
                 }
 
                 foreach (var child in node.Children)
+                {
                     DrawNode(child, effect, text);
+                }
             }
         }
     }

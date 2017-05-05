@@ -6,7 +6,8 @@ namespace engenious.Graphics
     {
         public Node()
         {
-            GlobalTransform = LocalTransform = Matrix.Identity;
+            GlobalTransform = AnimationTransform.Identity;
+            LocalTransform = Matrix.Identity;
         }
 
         public string Name{ get; set; }
@@ -17,9 +18,12 @@ namespace engenious.Graphics
 
         public Matrix LocalTransform{ get; set; }
 
-        public Matrix GlobalTransform{ get; set; }
+        public AnimationTransform GlobalTransform{ get; set; }
 
+        public Node Parent{get;set;}
         public List<Node> Children{ get; set; }
+
+        public bool IsTransformed{get;set;}
     }
 }
 

@@ -1,6 +1,6 @@
 ﻿namespace engenious
 {
-    public class AnimationTransform
+    public struct AnimationTransform
     {
         public AnimationTransform(string name,Vector3 location, Vector3 scale, Quaternion quaternion)
         {
@@ -19,7 +19,7 @@
         public Matrix ToMatrix()
         {
             Matrix res = Matrix.CreateFromQuaternion(Rotation.X, Rotation.Y, Rotation.Z, Rotation.W);
-            res.M11 *= Scale.X;
+            /*res.M11 *= Scale.X;
             res.M12 *= Scale.X;
             res.M13 *= Scale.X;
             res.M21 *= Scale.Y;
@@ -27,7 +27,7 @@
             res.M23 *= Scale.Y;
             res.M31 *= Scale.Z;
             res.M32 *= Scale.Z;
-            res.M33 *= Scale.Z;
+            res.M33 *= Scale.Z;*/
             res.M41 = Location.X;
             res.M42 = Location.Y;
             res.M43 = Location.Z;
@@ -36,13 +36,19 @@
 
         public static AnimationTransform Lerp(AnimationTransform transform1,AnimationTransform transform2,float amount)
         {
+            var quat = Quaternion.Lerp(transform1.Rotation,transform2.Rotation,amount);
             return new AnimationTransform("",Vector3.Lerp(transform1.Location,transform2.Location,amount),
                                             Vector3.Lerp(transform1.Scale,transform2.Scale,amount),
-                                            Quaternion.Lerp(transform1.Rotation,transform2.Rotation,amount));
+                quat);
         }
         public static AnimationTransform operator +(AnimationTransform t1,AnimationTransform t2)
         {
             return new AnimationTransform("",t1.Location+t2.Location,t1.Scale*t2.Scale,t1.Rotation*t2.Rotation);
+        }
+        public static AnimationTransform operator *(AnimationTransform t1,AnimationTransform t2)
+        {
+            return new AnimationTransform("",t1.Location+Vector3.Transform(t2.Location,t1.Rotation),t2.Scale,t1.Rotation*t2.Rotation);//TODO: scaling missing
+            //return new AnimationTransform("",t1.Location+t2.Location,t1.Scale*t2.Scale,t1.Rotation*t2.Rotation);
         }
         public static AnimationTransform Transform(AnimationTransform t,Matrix transformation)
         {
@@ -50,6 +56,22 @@
                 t.Scale,
                 t.Rotation);
         }
+
+        public static bool operator ==(AnimationTransform t1, AnimationTransform t2)
+        {
+            return t1.Location == t2.Location && t1.Rotation == t2.Rotation && t1.Scale == t2.Scale;
+        }
+        public static bool operator !=(AnimationTransform t1, AnimationTransform t2)
+        {
+            return !(t1 == t2);
+        }
+
+        public override string ToString()
+        {
+            return string.Format("[AnimationTransform: Rotation={0}, Location={1}, Scale={2}]", Rotation, Location, Scale);
+        }
+
+        public static readonly AnimationTransform Identity = new AnimationTransform("",Vector3.Zero,Vector3.One,Quaternion.Identity);
     }
 }
 
